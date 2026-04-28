@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEER杯 AI 狼人杀 - CYBERPUNK HUD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --c-cyan: #00f0ff;
+      --c-red: #ff003c;
+      --c-yellow: #fcee0a;
+      --c-bg: #030407;
+      --c-panel: rgba(5, 8, 12, 0.85);
+      --c-text: #d1d5db;
+    }
+
+    body {
+      background-color: var(--c-bg);
+      color: var(--c-text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* CRT Scanlines Overlay */
+    body::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      z-index: 999;
+      background-size: 100% 2px, 3px 100%;
+      pointer-events: none;
+    }
+
+    /* UI Layout Container */
+    .app-container {
+      display: grid;
+      grid-template-rows: 70px 1fr 70px;
+      height: 100vh;
+      padding: 15px 25px;
+      gap: 15px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* HEADER */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--c-cyan);
+      position: relative;
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.15) 0%, transparent 40%);
+    }
+
+    .app-header::before {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 20%;
+      height: 2px;
+      background: var(--c-yellow);
+      box-shadow: 0 0 10px var(--c-yellow);
+    }
+
+    .app-header::after {
+      content: "SYSTEM_ONLINE // V 2.4.9";
+      position: absolute;
+      bottom: -18px;
+      right: 0;
+      color: var(--c-cyan);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      text-transform: uppercase;
+      font-size: 26px;
+      text-shadow: 0 0 8px var(--c-cyan), 2px 2px 0px rgba(255, 0, 60, 0.5);
+      letter-spacing: 3px;
+      margin-left: 15px;
+    }
+
+    .subtitle {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--c-yellow);
+      border: 1px solid var(--c-yellow);
+      padding: 4px 16px;
+      background: rgba(252, 238, 10, 0.1);
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+      letter-spacing: 1px;
+      font-size: 13px;
+      text-shadow: 0 0 5px var(--c-yellow);
+    }
+
+    /* MAIN GRID */
+    .app-main-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr 420px;
+      gap: 20px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* PANELS */
+    .cy-panel {
+      background: var(--c-panel);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(8px);
+    }
+
+    .cy-panel::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 30px;
+      height: 3px;
+      background: var(--c-cyan);
+    }
+
+    .cy-panel::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 30px;
+      height: 3px;
+      background: var(--c-cyan);
+    }
+
+    .panel-header {
+      padding: 12px 18px;
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      font-size: 14px;
+      letter-spacing: 2px;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(0, 240, 255, 0.1) 0%, transparent 100%);
+    }
+
+    /* LEFT: PLAYERS LIST */
+    .players-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .pcard {
+      position: relative;
+      background: rgba(0, 0, 0, 0.7);
+      border-left: 4px solid var(--p-color, var(--c-cyan));
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      cursor: default;
+    }
+
+    .pcard::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      pointer-events: none;
+      clip-path: inherit;
+    }
+
+    .pcard:hover,
+    .pcard.speaking {
+      background: rgba(var(--p-color-rgb, 0, 240, 255), 0.15);
+      box-shadow: inset 0 0 25px rgba(var(--p-color-rgb, 0, 240, 255), 0.25);
+    }
+
+    .pcard.dead {
+      filter: grayscale(1) opacity(0.35);
+      border-left-color: #333 !important;
+    }
+
+    .seat-num {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: var(--p-color, var(--c-cyan));
+      color: #000;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 2px 8px;
+      clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+    }
+
+    .avatar-hex {
+      width: 44px;
+      height: 44px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      background: var(--p-color, var(--c-cyan));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .avatar-hex img {
+      width: 40px;
+      height: 40px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      object-fit: cover;
+    }
+
+    .pcard-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .pcard .name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .pcard .role {
+      align-self: flex-start;
+      padding: 1px 6px;
+      font-size: 11px;
+      background: rgba(var(--role-color-rgb, 255, 255, 255), 0.1);
+      border: 1px solid var(--role-color);
+      color: var(--role-color);
+      font-family: 'Share Tech Mono', monospace;
+      text-shadow: 0 0 4px var(--role-color);
+    }
+
+    .skull-badge {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%) rotate(10deg);
+      color: var(--c-red);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 15px;
+      text-shadow: 0 0 8px var(--c-red);
+      border: 1px solid var(--c-red);
+      background: rgba(255, 0, 60, 0.1);
+      padding: 2px 10px;
+      letter-spacing: 2px;
+    }
+
+    .mic-wave {
+      display: none;
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      gap: 3px;
+    }
+
+    .pcard.speaking .mic-wave {
+      display: flex;
+    }
+
+    .mic-wave span {
+      width: 3px;
+      height: 10px;
+      background: var(--p-color, var(--c-cyan));
+      animation: cyWave 1s infinite ease-in-out;
+    }
+
+    .mic-wave span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .mic-wave span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes cyWave {
+
+      0%,
+      100% {
+        height: 4px;
+      }
+
+      50% {
+        height: 16px;
+        box-shadow: 0 0 8px currentColor;
+      }
+    }
+
+    /* CENTER: 3D STAGE */
+    .panel-center {
+      position: relative;
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      background: radial-gradient(circle at center, rgba(0, 240, 255, 0.06) 0%, rgba(5, 8, 12, 0.8) 70%);
+      clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+    }
+
+    .panel-center::before {
+      content: "COMBAT_ARENA_01";
+      position: absolute;
+      top: 10px;
+      left: 15px;
+      color: var(--c-cyan);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      opacity: 0.5;
+      z-index: 5;
+    }
+
+    #stageCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* HUD Speech Bubble */
+    .active-speech-bubble {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 85%;
+      max-width: 550px;
+      background: rgba(5, 8, 12, 0.9);
+      border: 1px solid var(--c-cyan);
+      border-left: 4px solid var(--c-cyan);
+      padding: 16px 20px;
+      display: flex;
+      gap: 16px;
+      clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+      z-index: 10;
+      animation: hudGlitch 0.3s ease-out;
+    }
+
+    @keyframes hudGlitch {
+      0% {
+        clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%);
+        opacity: 0;
+      }
+
+      50% {
+        clip-path: polygon(0 60%, 100% 60%, 100% 80%, 0 80%);
+        opacity: 1;
+      }
+
+      100% {
+        clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);
+      }
+    }
+
+    .active-speech-bubble::after {
+      content: "[VOICE_LINK_ACTIVE]";
+      position: absolute;
+      bottom: 4px;
+      right: 8px;
+      color: var(--c-cyan);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px;
+      opacity: 0.6;
+    }
+
+    .bubble-avatar {
+      width: 50px;
+      height: 50px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      border: 2px solid var(--c-cyan);
+      flex-shrink: 0;
+    }
+
+    .bubble-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bubble-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .bubble-name {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--c-cyan);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .bubble-text {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #fff;
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
+    }
+
+    /* RIGHT: TERMINAL LOGS */
+    .table-log-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .table-log-box .empty {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.2);
+      margin-top: 40%;
+      font-size: 15px;
+    }
+
+    .log-phase {
+      color: var(--c-yellow);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 15px;
+      margin: 20px 0 10px;
+      border-bottom: 1px solid rgba(252, 238, 10, 0.3);
+      padding-bottom: 6px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 5px var(--c-yellow);
+    }
+
+    .log-phase::before {
+      content: "> ";
+    }
+
+    .log-role {
+      color: #888;
+      font-size: 12px;
+    }
+
+    .log-system {
+      color: #aaa;
+    }
+
+    .log-wolf {
+      color: var(--c-red);
+      font-weight: bold;
+      text-shadow: 0 0 5px var(--c-red);
+    }
+
+    .log-seer {
+      color: #d946ef;
+      font-weight: bold;
+      text-shadow: 0 0 5px #d946ef;
+    }
+
+    .log-witch {
+      color: #3b82f6;
+      font-weight: bold;
+      text-shadow: 0 0 5px #3b82f6;
+    }
+
+    .log-death {
+      color: var(--c-red);
+      font-weight: bold;
+      background: repeating-linear-gradient(45deg, rgba(255, 0, 60, 0.1), rgba(255, 0, 60, 0.1) 10px, transparent 10px, transparent 20px);
+      border-left: 3px solid var(--c-red);
+      padding: 4px 10px;
+      margin: 6px 0;
+    }
+
+    .log-event {
+      color: var(--c-cyan);
+    }
+
+    .log-error {
+      color: #f97316;
+      font-style: italic;
+      border-left: 2px solid #f97316;
+      padding-left: 8px;
+    }
+
+    .log-thinking {
+      color: #666;
+      font-style: italic;
+    }
+
+    .log-win {
+      color: var(--c-yellow);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      text-align: center;
+      border: 1px solid var(--c-yellow);
+      padding: 12px;
+      margin: 20px 0;
+      background: rgba(252, 238, 10, 0.1);
+      text-shadow: 0 0 8px var(--c-yellow);
+      letter-spacing: 2px;
+      clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    }
+
+    .speech-card,
+    .speech-failed {
+      margin: 8px 0;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 2px solid currentColor;
+      position: relative;
+    }
+
+    .speech-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      border-top: 1px solid currentColor;
+      border-right: 1px solid currentColor;
+      opacity: 0.5;
+    }
+
+    .speech-failed {
+      border-left-color: var(--c-red);
+      background: rgba(255, 0, 60, 0.05);
+    }
+
+    .btn-retry {
+      background: transparent;
+      border: 1px solid #f97316;
+      color: #f97316;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: all 0.2s;
+    }
+
+    .btn-retry:hover {
+      background: #f97316;
+      color: #000;
+    }
+
+    /* BOTTOM CONTROLS */
+    .app-controls {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      border-top: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .cy-btn {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 2px;
+      color: #000;
+      background: var(--c-cyan);
+      border: none;
+      padding: 14px 35px;
+      cursor: pointer;
+      position: relative;
+      clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .cy-btn::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      clip-path: polygon(100% 0, 100% 100%, 0 100%);
+    }
+
+    .cy-btn:hover {
+      background: #fff;
+      box-shadow: 0 0 20px var(--c-cyan);
+    }
+
+    .cy-btn.red {
+      background: var(--c-red);
+      color: #fff;
+    }
+
+    .cy-btn.red:hover {
+      background: #fff;
+      color: var(--c-red);
+      box-shadow: 0 0 20px var(--c-red);
+    }
+
+    .cy-btn.yellow {
+      background: var(--c-yellow);
+      color: #000;
+    }
+
+    .cy-btn.yellow:hover {
+      background: #fff;
+      box-shadow: 0 0 20px var(--c-yellow);
+    }
+
+    .cy-btn:disabled {
+      background: #222;
+      color: #555;
+      cursor: not-allowed;
+      box-shadow: none;
+      border: 1px solid #333;
+    }
+
+    .cy-btn:disabled::after {
+      background: #333;
+    }
+
+    .btn-sm {
+      background: transparent;
+      border: 1px solid var(--c-cyan);
+      color: var(--c-cyan);
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover {
+      background: var(--c-cyan);
+      color: #000;
+      box-shadow: 0 0 10px var(--c-cyan);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--c-cyan);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .app-main-grid {
+        grid-template-columns: 280px 1fr 340px;
+        gap: 15px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow-y: auto;
+      }
+
+      .app-container {
+        height: auto;
+        min-height: 100vh;
+        grid-template-rows: auto auto auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .app-main-grid {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-center {
+        height: 300px;
+        order: 1;
+      }
+
+      .cy-panel {
+        max-height: 400px;
+        order: 2;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- HEADER -->
+    <header class="app-header">
+      <h1>DEER杯 AI 狼人杀</h1>
+      <div class="subtitle" id="subtitle">INITIATING PROTOCOL // AI.DEATHMATCH</div>
+    </header>
+
+    <!-- MAIN GRID -->
+    <main class="app-main-grid">
+      <!-- LEFT: PLAYERS -->
+      <section class="cy-panel">
+        <div class="panel-header">
+          <span>// TARGETS</span>
+          <button class="btn-sm" id="toggleBtn" style="display:none" onclick="toggleRoles()">HIDE_ROLE</button>
+        </div>
+        <div id="playerCards" class="players-list"></div>
+      </section>
+
+      <!-- CENTER: 3D ARENA -->
+      <section class="panel-center" id="tableArea">
+        <canvas id="stageCanvas" aria-hidden="true"></canvas>
+
+        <!-- HUD Bubble -->
+        <div id="activeSpeechBubble" class="active-speech-bubble" style="display: none;">
+          <div class="bubble-avatar"><img id="bubbleAvatarImg" src="" alt=""></div>
+          <div class="bubble-content">
+            <div class="bubble-name" id="bubbleName"></div>
+            <div class="bubble-text" id="bubbleText"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: TERMINAL -->
+      <section class="cy-panel">
+        <div class="panel-header">
+          <span>// SYSTEM_LOG</span>
+        </div>
+        <div class="table-log-box" id="logBox">
+          <div class="empty">AWAITING SYSTEM START...<br><br><span style="font-size:11px;color:#555">API KEY REQUIRED IN
+              APP.PY</span></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BOTTOM: CONTROLS -->
+    <footer class="app-controls">
+      <div class="controls">
+        <button class="cy-btn" id="introBtn" onclick="runIntro()">SYS.INTRO</button>
+        <button class="cy-btn yellow" id="actionBtn" onclick="handleAction()">EXECUTE</button>
+        <button class="cy-btn red" id="endBtn" onclick="endGame()" style="display:none">TERMINATE</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ===== 配置数据 =====
+    const PLAYERS_CFG = [
+      { id: 1, name: "Doubao", emoji: "", icon: "/static/icons/doubao.jpeg", color: "#00f0ff", personality: "说话温和体贴，容易妥协，爱说'大家说的都有道理'" },
+      { id: 2, name: "DeepSeek", emoji: "", icon: "/static/icons/deepseek.jpeg", color: "#3b82f6", personality: "逻辑严密冷静，喜欢用'首先其次最后'来分析" },
+      { id: 3, name: "ChatGPT", emoji: "", icon: "/static/icons/chatgpt.jpeg", color: "#10a37f", personality: "自信话多，爱用排比句，滔滔不绝" },
+      { id: 4, name: "Claude", emoji: "", icon: "/static/icons/claude.jpeg", color: "#fcee0a", personality: "谨慎理性，说话礼貌克制，爱说'从多个角度来看'" },
+      { id: 5, name: "Gemini", emoji: "", icon: "/static/icons/gemini.jpeg", color: "#d946ef", personality: "直觉型，大胆推测，爱说'我有种强烈的感觉'" },
+      { id: 6, name: "Grok", emoji: "", icon: "/static/icons/grok.jpeg", color: "#f97316", personality: "幽默毒舌，阴阳怪气，喜欢怼人和玩梗" },
+    ];
+    const ROLE_POOL = ["狼人", "狼人", "预言家", "女巫", "平民", "平民"];
+    const ROLE_EMOJI = { "狼人": "", "预言家": "", "女巫": "", "平民": "" };
+    const ROLE_COLOR = { "狼人": "#ff003c", "预言家": "#d946ef", "女巫": "#3b82f6", "平民": "#a0a0a0" };
+
+    function hexToRgb(hex) {
+      var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? parseInt(result[1], 16) + ", " + parseInt(result[2], 16) + ", " + parseInt(result[3], 16) : "0, 240, 255";
+    }
+
+    // ===== 游戏状态 =====
+    let G = {
+      players: [], phase: "setup", day: 0, logs: [],
+      loading: false, winner: null, showRoles: true,
+      witchItems: { save: true, poison: true },
+      seerHistory: [], gameHistory: [], speakingId: null,
+    };
+
+    let audioQueuePromise = Promise.resolve();
+    const retryStore = {};
+
+    // ===== 赛博风 3D 舞台 =====
+    const Stage3D = (() => {
+      const state = {
+        ready: false, scene: null, camera: null, renderer: null,
+        table: null, rim: null, grid: null, hologramBeam: null,
+        ambient: null, keyLight: null, fillLight: null, clock: null,
+        players: new Map(), textures: new Map(), phase: "setup",
+      };
+      let threeLoadPromise = null;
+
+      const phaseLight = {
+        setup: { bg: 0x030407, key: 0x00f0ff, fill: 0x3b82f6, rim: 0x00f0ff },
+        night: { bg: 0x010204, key: 0x3b82f6, fill: 0x1e1b4b, rim: 0x3b82f6 },
+        speeches: { bg: 0x050505, key: 0xfcee0a, fill: 0x00f0ff, rim: 0xfcee0a },
+        vote: { bg: 0x0a0102, key: 0xff003c, fill: 0x7f1d1d, rim: 0xff003c },
+        game_over: { bg: 0x020a05, key: 0x00ffaa, fill: 0x064e3b, rim: 0x00ffaa },
+      };
+
+      function loadThree() {
+        if (window.THREE) return Promise.resolve(window.THREE);
+        if (!threeLoadPromise) {
+          threeLoadPromise = import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js")
+            .then(mod => { window.THREE = mod; return mod; }).catch(err => null);
+        }
+        return threeLoadPromise;
+      }
+
+      async function init() {
+        if (state.ready) return;
+        const THREE = await loadThree();
+        if (!THREE || state.ready) return;
+        const canvas = document.getElementById("stageCanvas");
+        const area = document.getElementById("tableArea");
+        if (!canvas || !area) return;
+
+        state.scene = new THREE.Scene();
+        state.clock = new THREE.Clock();
+        state.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+        state.camera.position.set(0, 9, 10);
+        state.camera.lookAt(0, 0, 0);
+
+        state.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        state.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        state.renderer.shadowMap.enabled = true;
+        state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // 赛博深黑地板带发光网格
+        const floor = new THREE.Mesh(
+          new THREE.PlaneGeometry(25, 25, 1, 1),
+          new THREE.MeshStandardMaterial({ color: 0x020305, roughness: 0.8, metalness: 0.5 })
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.6;
+        floor.receiveShadow = true;
+        state.scene.add(floor);
+
+        // 科幻六边形桌子
+        state.table = new THREE.Mesh(
+          new THREE.CylinderGeometry(4.2, 3.8, 0.5, 6),
+          new THREE.MeshStandardMaterial({ color: 0x0a0c10, roughness: 0.2, metalness: 0.9 })
+        );
+        state.table.position.y = -0.2;
+        state.table.castShadow = true;
+        state.table.receiveShadow = true;
+        state.scene.add(state.table);
+
+        // 霓虹边框 (线框)
+        const edges = new THREE.EdgesGeometry(new THREE.CylinderGeometry(4.25, 3.85, 0.55, 6));
+        state.rim = new THREE.LineSegments(
+          edges,
+          new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 2 })
+        );
+        state.rim.position.y = -0.2;
+        state.scene.add(state.rim);
+
+        state.grid = new THREE.GridHelper(20, 40, 0x00f0ff, 0x00f0ff);
+        state.grid.position.y = -0.58;
+        state.grid.material.transparent = true;
+        state.grid.material.opacity = 0.15;
+        state.scene.add(state.grid);
+
+        // 全息矩阵光柱
+        const beamGeo = new THREE.CylinderGeometry(1.5, 3.0, 5.0, 6, 1, true);
+        const beamMat = new THREE.MeshBasicMaterial({
+          color: 0x00f0ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, wireframe: true
+        });
+        state.hologramBeam = new THREE.Mesh(beamGeo, beamMat);
+        state.hologramBeam.position.set(0, 2.3, 0);
+        state.scene.add(state.hologramBeam);
+
+        state.ambient = new THREE.AmbientLight(0xffffff, 0.4);
+        state.scene.add(state.ambient);
+
+        state.keyLight = new THREE.SpotLight(0x00f0ff, 8.0, 30, Math.PI / 4, 0.5, 1);
+        state.keyLight.position.set(-5, 8, 6);
+        state.keyLight.castShadow = true;
+        state.scene.add(state.keyLight);
+
+        state.fillLight = new THREE.PointLight(0xff003c, 4.0, 20);
+        state.fillLight.position.set(5, 4, -5);
+        state.scene.add(state.fillLight);
+
+        state.ready = true;
+        resize();
+        sync(G.players.length > 0 ? G.players : PLAYERS_CFG.map(p => ({ ...p, role: "?", alive: true })));
+        setPhase(G.phase);
+        animate();
+      }
+
+      function textureFor(player) {
+        if (!player.icon) return null;
+        if (state.textures.has(player.icon)) return state.textures.get(player.icon);
+        const tex = new THREE.TextureLoader().load(player.icon);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        state.textures.set(player.icon, tex);
+        return tex;
+      }
+
+      function makePlayer(player, index) {
+        const group = new THREE.Group();
+        group.userData.index = index;
+
+        // 六边形座位底座
+        const seat = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.6, 0.7, 0.2, 6),
+          new THREE.MeshStandardMaterial({ color: new THREE.Color(player.color || "#00f0ff"), roughness: 0.2, metalness: 0.8 })
+        );
+        seat.position.y = 0.1;
+        seat.castShadow = true;
+        group.add(seat);
+
+        // 环绕数据环
+        const halo = new THREE.Mesh(
+          new THREE.RingGeometry(0.8, 0.9, 6),
+          new THREE.MeshBasicMaterial({ color: new THREE.Color(player.color || "#00f0ff"), side: THREE.DoubleSide, transparent: true, opacity: 0 })
+        );
+        halo.rotation.x = -Math.PI / 2;
+        halo.position.y = 0.25;
+        group.add(halo);
+
+        const texture = textureFor(player);
+        const avatar = new THREE.Sprite(
+          new THREE.SpriteMaterial({ map: texture || null, color: texture ? 0xffffff : new THREE.Color(player.color || "#00f0ff") })
+        );
+        avatar.position.y = 1.1;
+        avatar.scale.set(1.0, 1.0, 1);
+        group.add(avatar);
+
+        state.scene.add(group);
+        return { group, seat, halo, avatar, player };
+      }
+
+      function positionPlayer(entry, index, total) {
+        const angle = -Math.PI / 2 + index * (Math.PI * 2 / Math.max(total, 1));
+        const radius = 3.6;
+        entry.group.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+        entry.seat.rotation.y = -angle + Math.PI / 2;
+      }
+
+      function sync(list) {
+        if (!state.ready) return;
+        const ids = new Set(list.map(p => p.id));
+        [...state.players.keys()].forEach(id => {
+          if (!ids.has(id)) {
+            state.scene.remove(state.players.get(id).group);
+            state.players.delete(id);
+          }
+        });
+
+        list.forEach((player, index) => {
+          let entry = state.players.get(player.id);
+          if (!entry) {
+            entry = makePlayer(player, index);
+            state.players.set(player.id, entry);
+          }
+          entry.player = player;
+          positionPlayer(entry, index, list.length);
+          const color = new THREE.Color(player.alive ? (player.color || "#00f0ff") : "#222222");
+          entry.seat.material.color.copy(color);
+          entry.avatar.material.opacity = player.alive ? 1 : 0.2;
+          entry.avatar.material.color.set(player.alive ? 0xffffff : 0x444444);
+        });
+      }
+
+      function setPhase(phase) {
+        if (!state.ready) return;
+        state.phase = phase || "setup";
+        const colors = phaseLight[state.phase] || phaseLight.setup;
+        state.scene.background = new THREE.Color(colors.bg);
+        state.keyLight.color.setHex(colors.key);
+        state.fillLight.color.setHex(colors.fill);
+        if (state.rim) {
+          state.rim.material.color.setHex(colors.rim);
+        }
+      }
+
+      function resize() {
+        if (!state.ready) return;
+        const area = document.getElementById("tableArea");
+        const w = Math.max(1, area.clientWidth);
+        const h = Math.max(1, area.clientHeight);
+        state.camera.aspect = w / h;
+        state.camera.updateProjectionMatrix();
+        state.renderer.setSize(w, h, false);
+      }
+
+      function animate() {
+        if (!state.ready) return;
+        requestAnimationFrame(animate);
+        const t = state.clock.getElapsedTime();
+
+        state.table.rotation.y = t * 0.05;
+        state.rim.rotation.y = t * 0.05;
+        if (state.hologramBeam) {
+          state.hologramBeam.rotation.y = -t * 0.1;
+          state.hologramBeam.material.opacity = 0.05 + Math.sin(t * 5.0) * 0.03;
+        }
+
+        state.players.forEach((entry, id) => {
+          const speaking = G.speakingId === id;
+          entry.halo.material.opacity = speaking ? 0.8 + Math.sin(t * 10) * 0.2 : 0.0;
+          entry.halo.rotation.z = speaking ? t * 2 : 0;
+          entry.avatar.position.y = speaking ? 1.2 + Math.sin(t * 8) * 0.1 : 1.1;
+        });
+
+        state.renderer.render(state.scene, state.camera);
+      }
+
+      return { init, sync, setPhase, resize };
+    })();
+
+    // ===== 音效管理 =====
+    const AudioMgr = {
+      bgm: new Audio(),
+      playBgm: function (url) {
+        this.bgm.src = url; this.bgm.loop = true; this.bgm.volume = 0.25;
+        this.bgm.play().catch(e => console.log('BGM Error:', e));
+      },
+      stopBgm: function () { this.bgm.pause(); },
+      playEffect: function (url) {
+        const sfx = new Audio(url); sfx.volume = 0.7;
+        sfx.play().catch(e => console.log('SFX Error:', e));
+      }
+    };
+
+    // ===== 工具函数 =====
+    function shuffle(a) { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[b[i], b[j]] = [b[j], b[i]]; } return b; }
+    function parseJSON(text) {
+      try {
+        const c = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+        const m = c.match(/\{[\s\S]*?\}/);
+        if (m) return JSON.parse(m[0]);
+      } catch { } return null;
+    }
+    function cleanUIText(value = "") {
+      return String(value).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\uFE0F]/gu, "").replace(/[ \t]{2,}/g, " ").replace(/^\s+/gm, "").trim();
+    }
+    function checkWin(ps) {
+      const alive = ps.filter(p => p.alive);
+      const w = alive.filter(p => p.role === "狼人").length;
+      const g = alive.filter(p => p.role !== "狼人").length;
+      if (w === 0) return "good";
+      if (w >= g) return "wolf";
+      return null;
+    }
+    function alive() { return G.players.filter(p => p.alive); }
+    function byId(id) { return G.players.find(p => p.id === id); }
+    function byRole(r) { return G.players.filter(p => p.role === r && p.alive); }
+
+    // ===== API 调用 =====
+    async function callPlayer(playerName, systemPrompt, userPrompt) {
+      const resp = await fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player: playerName, system: systemPrompt, message: userPrompt }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      return data.content;
+    }
+
+    async function playTTS(playerName, text, uiCallback) {
+      if (!text) {
+        if (uiCallback) {
+          const last = audioQueuePromise;
+          audioQueuePromise = (async () => { await last; uiCallback(); })();
+        } return;
+      }
+      try {
+        const resp = await fetch("/api/tts", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ player: playerName, text: text })
+        });
+        if (!resp.ok) throw new Error("TTS Failed");
+        const blob = await resp.blob();
+        const lastAudio = audioQueuePromise;
+        audioQueuePromise = (async () => {
+          await lastAudio;
+          if (uiCallback) uiCallback();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          await new Promise(resolve => {
+            audio.onended = resolve; audio.onerror = resolve; audio.play().catch(resolve);
+          });
+          URL.revokeObjectURL(url);
+        })();
+      } catch (e) {
+        if (uiCallback) {
+          const last = audioQueuePromise;
+          audioQueuePromise = (async () => { await last; uiCallback(); })();
+        }
+      }
+    }
+
+    function playHostTTS(text, uiCallback) {
+      if (!text) {
+        if (uiCallback) {
+          const last = audioQueuePromise;
+          audioQueuePromise = (async () => { await last; uiCallback(); })();
+        } return;
+      }
+      const lastAudio = audioQueuePromise;
+      audioQueuePromise = (async () => {
+        await lastAudio;
+        if (uiCallback) uiCallback();
+        await new Promise(resolve => {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'zh-CN'; u.rate = 1.1; u.pitch = 0.8;
+          u.onend = resolve; u.onerror = resolve;
+          window.speechSynthesis.speak(u);
+        });
+      })();
+    }
+
+    // ===== 渲染逻辑 =====
+    function addLog(content, type = "system") {
+      G.logs.push({ content, type });
+      renderLog();
+    }
+
+    function render() {
+      renderCards(); renderLog(); renderSubtitle(); renderButton();
+      const tb = document.getElementById("toggleBtn");
+      tb.style.display = G.players.length > 0 ? "" : "none";
+      tb.textContent = G.showRoles ? "HIDE_ROLE" : "SHOW_ROLE";
+    }
+
+    function renderCards() {
+      const box = document.getElementById("playerCards");
+      const list = G.players.length > 0 ? G.players : PLAYERS_CFG.map(p => ({ ...p, role: "?", alive: true }));
+
+      box.innerHTML = list.map((p, i) => {
+        const sr = G.showRoles && p.role && p.role !== "?";
+        const speaking = G.speakingId === p.id ? "speaking" : "";
+        const iconSrc = p.icon || PLAYERS_CFG.find(c => c.id === p.id)?.icon || "";
+        const pRgb = hexToRgb(p.color);
+        const rColor = sr ? ROLE_COLOR[p.role] : "#ffffff";
+        const rRgb = hexToRgb(rColor);
+
+        return `<div class="pcard ${p.alive ? '' : 'dead'} ${speaking}" style="--p-color:${p.color}; --p-color-rgb:${pRgb};">
+          <div class="seat-num">${p.id}</div>
+          <div class="mic-wave"><span></span><span></span><span></span></div>
+          <div class="avatar-hex"><img src="${iconSrc}" alt="${p.name}"></div>
+          <div class="pcard-info">
+            <div class="name" style="color:${p.alive ? '#fff' : '#666'}">${p.name}</div>
+            ${sr ? `<div class="role" style="--role-color:${rColor}; --role-color-rgb:${rRgb}">${p.role}</div>` : ''}
+          </div>
+          ${!p.alive ? '<div class="skull-badge">KIA</div>' : ''}
+        </div>`;
+      }).join("");
+
+      Stage3D.sync(list);
+      Stage3D.setPhase(G.phase);
+    }
+
+    function renderLog() {
+      const box = document.getElementById("logBox");
+      if (G.logs.length === 0) {
+        box.innerHTML = '<div class="empty">AWAITING SYSTEM START...<br><br><span style="font-size:11px;color:#555">API KEY REQUIRED IN APP.PY</span></div>';
+        return;
+      }
+      box.innerHTML = G.logs.map(l => {
+        const content = cleanUIText(l.content);
+        if (l.type === 'speech') {
+          const p = PLAYERS_CFG.find(c => l.content.startsWith(`${c.name}`));
+          const clr = p ? p.color : '#00f0ff';
+          return `<div class="speech-card" style="color:${clr};">${content}</div>`;
+        }
+        if (l.type === 'speech-failed') {
+          const p = PLAYERS_CFG.find(c => l.content.startsWith(`${c.name}`));
+          const clr = p ? p.color : '#f97316';
+          return `<div class="speech-failed" style="color:${clr};">${content}<button class="btn-retry" onclick="retrySpeech('${l.retryId}')">RETRY</button></div>`;
+        }
+        return `<div class="log-${l.type}">${content}</div>`;
+      }).join("");
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function renderSubtitle() {
+      const el = document.getElementById("subtitle");
+      if (G.phase === "setup") { el.textContent = "INITIATING PROTOCOL // AI.DEATHMATCH"; return; }
+      const m = { "night": "NIGHT_PHASE", "speeches": "DAY_SPEECH", "vote": "VOTING_PHASE", "game_over": G.winner === "wolf" ? "WOLF_WIN" : "HUMAN_WIN" };
+      el.textContent = `DAY_${G.day} // ${m[G.phase] || ""}`;
+    }
+
+    function renderButton() {
+      const btn = document.getElementById("actionBtn");
+      const endBtn = document.getElementById("endBtn");
+      const introBtn = document.getElementById("introBtn");
+      const labels = { "setup": "EXECUTE", "night": "NIGHT_FALL", "speeches": "START_SPEECH", "vote": "START_VOTE", "game_over": "REBOOT" };
+      btn.textContent = G.loading ? "PROCESSING..." : labels[G.phase];
+      btn.disabled = G.loading;
+      const inGame = G.phase !== "setup" && G.phase !== "game_over";
+      endBtn.style.display = inGame ? "" : "none";
+      endBtn.disabled = G.loading;
+      introBtn.disabled = G.loading;
+    }
+
+    async function runIntro() {
+      if (G.loading) return;
+      G.loading = true; G.logs = []; G.speakingId = null; render();
+      addLog("SYS.INTRO_SEQUENCE", "phase");
+
+      for (const p of PLAYERS_CFG) {
+        const sys = `你是 ${p.name}，一个 AI 语言模型。现在需要用中文向大家自我介绍：第一句话说明你是哪家公司的什么模型，第二句话说你的狼人杀游戏挑衅其他5个AI模型的宣言。不要超过30个字。语言风格要符合你的性格特点：${p.personality}。不超过2句话，简洁有力。`;
+        const msg = `请用你自己的风格介绍一下你自己。`;
+
+        try {
+          const resp = await callPlayer(p.name, sys, msg);
+          const intro = resp.replace(/^["'`\s]+|["'`\s]+$/g, "").trim();
+          await playTTS(p.name, intro, () => {
+            setSpeaking(p.id, intro);
+            G.logs.push({ content: `${p.name}：${intro}`, type: "speech" });
+            renderLog();
+          });
+        } catch (e) {
+          const _rid = `retry_${Date.now()}_intro_${p.id}`;
+          retryStore[_rid] = { player: p, systemPrompt: sys, userPrompt: msg };
+          await playTTS(p.name, "", () => {
+            G.logs.push({ content: `${p.name}：[CONNECTION_LOST]`, type: "speech-failed", retryId: _rid });
+            renderLog();
+          });
+        }
+        audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); });
+      }
+
+      await audioQueuePromise;
+      G.loading = false; render();
+    }
+
+    function endGame() {
+      if (G.loading || G.phase === "setup" || G.phase === "game_over") return;
+      G.loading = false; G.winner = null; G.phase = "game_over";
+      addLog("SYSTEM_TERMINATED_BY_USER", "win");
+      render();
+    }
+
+    function toggleRoles() { G.showRoles = !G.showRoles; render(); }
+
+    function setSpeaking(id, text = "") {
+      G.speakingId = id;
+      renderCards();
+      const bubble = document.getElementById("activeSpeechBubble");
+      if (id && text) {
+        const p = byId(id);
+        if (p) {
+          document.getElementById("bubbleAvatarImg").src = p.icon;
+          document.getElementById("bubbleName").textContent = p.name;
+          document.getElementById("bubbleText").textContent = text;
+          bubble.style.display = "flex";
+        }
+      } else {
+        bubble.style.display = "none";
+      }
+    }
+
+    async function retrySpeech(retryId) {
+      const data = retryStore[retryId]; if (!data) return;
+      const { player, systemPrompt, userPrompt } = data; delete retryStore[retryId];
+      const logIdx = G.logs.findIndex(l => l.retryId === retryId);
+      if (logIdx >= 0) { G.logs[logIdx] = { content: `  [RECONNECTING] ${player.name}...`, type: "thinking" }; renderLog(); }
+
+      try {
+        const resp = await callPlayer(player.name, systemPrompt, userPrompt);
+        const speech = resp.replace(/^["'`\s]+|["'`\s]+$/g, "").trim();
+        await playTTS(player.name, speech, () => {
+          setSpeaking(player.id, speech);
+          if (logIdx >= 0) G.logs[logIdx] = { content: `${player.name}：${speech}`, type: "speech" };
+          renderLog();
+        });
+        audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); });
+      } catch (e) {
+        const newId = `retry_${Date.now()}_${player.id}`;
+        retryStore[newId] = { player, systemPrompt, userPrompt };
+        if (logIdx >= 0) {
+          G.logs[logIdx] = { content: `${player.name}：[RECONNECT_FAILED]`, type: "speech-failed", retryId: newId };
+          renderLog();
+        }
+      }
+    }
+
+    function makeSystemPrompt(player) {
+      const roleInfo = player.role === "狼人"
+        ? `你的身份是【狼人】。队友：${byRole("狼人").filter(p => p.id !== player.id).map(p => p.id + "号" + p.name).join("、") || "无"}。你必须伪装好人。`
+        : player.role === "预言家"
+          ? `你的身份是【预言家】。查验记录：${G.seerHistory.map(h => `${h.target}号是${h.result}`).join("；") || "暂无"}。`
+          : player.role === "女巫"
+            ? `你的身份是【女巫】。${G.witchItems.save ? "有解药" : "无解药"}，${G.witchItems.poison ? "有毒药" : "无毒药"}。`
+            : `你的身份是【平民】。`;
+
+      return `你是 ${player.name}，正在玩6人狼人杀游戏。
+特点：${player.personality}
+${roleInfo}
+存活：${alive().map(p => p.id + "号" + p.name).join("、")}
+历史事件：${G.gameHistory.join("\n") || "无"}
+要求：只能基于已知信息判断，回复简短（2-3句话），必须严格按要求格式回复。`;
+    }
+
+    function startGame() {
+      const roles = shuffle(ROLE_POOL);
+      G = {
+        players: PLAYERS_CFG.map((p, i) => ({ ...p, role: roles[i], alive: true })),
+        phase: "night", day: 1, logs: [], loading: false, winner: null, showRoles: true,
+        witchItems: { save: true, poison: true }, seerHistory: [], gameHistory: [], speakingId: null
+      };
+      addLog("SYS.ROLE_ASSIGNED", "phase");
+      G.players.forEach(p => addLog(`  [SYS] ${p.name} → ${p.role}`, "role"));
+
+      AudioMgr.playEffect('/static/audio/start.mp3');
+      playHostTTS('角色分配完毕，即将进入黑夜', () => { });
+      render();
+    }
+
+    async function runNight() {
+      G.loading = true; render();
+      audioQueuePromise = audioQueuePromise.then(() => { addLog(`DAY_${G.day} // NIGHT_PHASE`, "phase"); renderLog(); });
+      audioQueuePromise = audioQueuePromise.then(() => { AudioMgr.playBgm('/static/audio/bg_night.mp3'); });
+      playHostTTS('天黑请闭眼。', () => { });
+
+      const wolves = byRole("狼人"), seer = byRole("预言家")[0], witch = byRole("女巫")[0], nonWolves = alive().filter(p => p.role !== "狼人");
+
+      let wolfTarget = null;
+      if (wolves.length > 0) {
+        playHostTTS('狼人请睁眼，请确认击杀目标。', () => { addLog(`WOLF_ACTION...`, "wolf"); renderLog(); });
+        for (const wolf of wolves) {
+          audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(wolf.id, "TARGETING..."); });
+          const candidates = nonWolves.map(p => p.id + "号" + p.name).join("、");
+          let prompt = `现在是第${G.day}天夜晚，你要选择杀谁。\n可选：${candidates}\n`;
+          if (wolves.length > 1 && wolfTarget) prompt += `队友建议杀 ${byId(wolfTarget)?.name}，同意吗？\n`;
+          prompt += `返回JSON：{"target":目标id数字,"reason":"一句话理由"}`;
+
+          try {
+            const resp = await callPlayer(wolf.name, makeSystemPrompt(wolf), prompt);
+            const r = parseJSON(resp);
+            if (r?.target) {
+              wolfTarget = r.target;
+              audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${wolf.name} 锁定 → ${byId(r.target)?.name}`, "wolf"); renderLog(); });
+            }
+          } catch (e) {
+            audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${wolf.name} [ERROR]`, "error"); renderLog(); });
+            if (!wolfTarget) wolfTarget = nonWolves[Math.floor(Math.random() * nonWolves.length)].id;
+          }
+          audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); });
+        }
+        if (!wolfTarget) wolfTarget = nonWolves[Math.floor(Math.random() * nonWolves.length)].id;
+        audioQueuePromise = audioQueuePromise.then(() => { addLog(`  TARGET_CONFIRMED → ${byId(wolfTarget)?.name}`, "wolf"); renderLog(); });
+      } else {
+        playHostTTS('狼人请睁眼，请确认击杀目标。', () => { });
+        audioQueuePromise = audioQueuePromise.then(() => new Promise(r => setTimeout(r, 1500)));
+      }
+      playHostTTS('狼人请闭眼。', () => { });
+
+      if (seer) {
+        playHostTTS('预言家请睁眼，请选择要查验的玩家。', () => { setSpeaking(seer.id, "SCANNING..."); addLog(`SEER_ACTION...`, "seer"); renderLog(); });
+        const canCheck = alive().filter(p => p.id !== seer.id && !G.seerHistory.find(h => h.target === p.id));
+        const prompt = `你要查验一个人的身份。\n可查验：${canCheck.map(p => p.id + "号" + p.name).join("、")}\n返回JSON：{"target":目标id数字,"reason":"一句话理由"}`;
+        try {
+          const resp = await callPlayer(seer.name, makeSystemPrompt(seer), prompt);
+          const r = parseJSON(resp);
+          if (r?.target) {
+            const tp = byId(r.target), result = tp?.role === "狼人" ? "狼人" : "好人";
+            G.seerHistory.push({ target: r.target, result });
+            audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${seer.name} 扫描 ${tp?.name} → ${result}`, "seer"); renderLog(); });
+          }
+        } catch (e) { audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${seer.name} [ERROR]`, "error"); renderLog(); }); }
+        audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); });
+      } else {
+        playHostTTS('预言家请睁眼，请选择要查验的玩家。', () => { });
+        audioQueuePromise = audioQueuePromise.then(() => new Promise(r => setTimeout(r, 1500)));
+      }
+      playHostTTS('预言家请闭眼。', () => { });
+
+      let saved = false, poisoned = null;
+      if (witch && (G.witchItems.save || G.witchItems.poison)) {
+        playHostTTS('女巫请睁眼，你要使用解药吗？你要使用毒药吗？', () => { setSpeaking(witch.id, "CHEM_ANALYSIS..."); addLog(`WITCH_ACTION...`, "witch"); renderLog(); });
+        const prompt = `今晚 ${byId(wolfTarget)?.name} 被杀。
+${G.witchItems.save ? "你有解药" : "无解药"}，${G.witchItems.poison ? "有毒药，可选：" + alive().filter(p => p.id !== witch.id).map(p => p.id + "号").join("、") : "无毒药"}
+返回JSON：{"save":true/false,"poison":目标id或null,"reason":"理由"}`;
+        try {
+          const resp = await callPlayer(witch.name, makeSystemPrompt(witch), prompt);
+          const r = parseJSON(resp);
+          if (r) {
+            if (r.save && G.witchItems.save) { saved = true; G.witchItems.save = false; audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${witch.name} HEALED ${byId(wolfTarget)?.name}`, "witch"); renderLog(); }); }
+            if (r.poison && G.witchItems.poison) {
+              const pp = byId(r.poison);
+              if (pp && pp.alive) { poisoned = r.poison; G.witchItems.poison = false; audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${witch.name} POISONED ${pp.name}`, "witch"); renderLog(); }); }
+            }
+          }
+        } catch (e) { audioQueuePromise = audioQueuePromise.then(() => { addLog(`  ${witch.name} [ERROR]`, "error"); renderLog(); }); }
+        audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); });
+      } else {
+        playHostTTS('女巫请睁眼，你要使用解药吗？你要使用毒药吗？', () => { });
+        audioQueuePromise = audioQueuePromise.then(() => new Promise(r => setTimeout(r, 1500)));
+      }
+      playHostTTS('女巫请闭眼。', () => { });
+
+      audioQueuePromise = audioQueuePromise.then(() => { addLog(`DAY_${G.day} // SUNRISE`, "phase"); renderLog(); });
+      audioQueuePromise = audioQueuePromise.then(() => { AudioMgr.playBgm('/static/audio/bg_day.mp3'); });
+      playHostTTS('天亮了，大家请睁眼。', () => { });
+
+      let deaths = [];
+      if (!saved && wolfTarget) deaths.push(wolfTarget);
+      if (poisoned) deaths.push(poisoned);
+
+      if (deaths.length === 0) {
+        playHostTTS('昨夜是个平安夜，无人出局。', () => { addLog("NO_CASUALTIES", "event"); renderLog(); });
+        G.gameHistory.push(`第${G.day}夜：平安夜`);
+      } else {
+        const deadNames = deaths.map(id => byId(id)?.name).join('和');
+        playHostTTS(`昨晚，${deadNames} 惨遭淘汰。`, () => {
+          deaths.forEach(id => {
+            const p = byId(id); if (p) { p.alive = false; addLog(`${p.name} (${p.role}) WAS_TERMINATED`, "death"); }
+          });
+          renderLog();
+        });
+        G.gameHistory.push(`第${G.day}夜：${deaths.map(id => byId(id)?.name).join("、")}出局`);
+      }
+
+      const w = checkWin(G.players);
+      if (w) {
+        audioQueuePromise = audioQueuePromise.then(() => { AudioMgr.stopBgm(); AudioMgr.playEffect(w === "wolf" ? '/static/audio/lose.mp3' : '/static/audio/win.mp3'); });
+        playHostTTS(w === "wolf" ? '游戏结束，狼人获胜' : '游戏结束，好人获胜', () => { });
+        G.winner = w; G.phase = "game_over";
+        audioQueuePromise = audioQueuePromise.then(() => { addLog(w === "wolf" ? "WOLVES_WIN" : "HUMANS_WIN", "win"); renderLog(); });
+      } else { G.phase = "speeches"; }
+
+      await audioQueuePromise;
+      G.loading = false; render();
+    }
+
+    async function runSpeeches() {
+      G.loading = true; render();
+      addLog(`DAY_SPEECH // FREE_TALK`, "phase");
+      const aliveP = alive(); let prevSpeeches = [];
+
+      for (const p of aliveP) {
+        addLog(`  [AWAITING_INPUT] ${p.name}...`, "thinking"); renderLog();
+        const prevText = prevSpeeches.length > 0 ? "前面发言：\n" + prevSpeeches.map(s => `${s.name}：${s.content}`).join("\n") : "你是第一个发言的。";
+        const prompt = `第${G.day}天白天发言。${prevText}\n请发表看法（2-3句话）。直接说话，不要JSON或引号。`;
+
+        try {
+          const resp = await callPlayer(p.name, makeSystemPrompt(p), prompt);
+          const speech = resp.replace(/^["'`\s]+|["'`\s]+$/g, "").trim();
+          prevSpeeches.push({ name: p.name, content: speech });
+          await playTTS(p.name, speech, () => {
+            setSpeaking(p.id, speech);
+            G.logs[G.logs.length - 1] = { content: `${p.name}：${speech}`, type: "speech" };
+            renderLog();
+          });
+        } catch (e) {
+          const _rid = `retry_${Date.now()}_speech_${p.id}`;
+          retryStore[_rid] = { player: p, systemPrompt: makeSystemPrompt(p), userPrompt: prompt };
+          await playTTS(p.name, "", () => {
+            G.logs[G.logs.length - 1] = { content: `${p.name}：[CONNECTION_LOST]`, type: "speech-failed", retryId: _rid };
+            renderLog();
+          });
+        }
+        audioQueuePromise = audioQueuePromise.then(() => { setSpeaking(null); renderLog(); });
+      }
+
+      await audioQueuePromise;
+      G.phase = "vote"; G.loading = false; render();
+    }
+
+    async function runVote() {
+      G.loading = true; render();
+      addLog(`VOTING_PHASE`, "phase");
+      const aliveP = alive();
+      const recentSpeeches = G.logs.filter(l => l.type === "speech").slice(-aliveP.length);
+      const speechText = recentSpeeches.map(l => l.content).join("\n");
+      const voteCount = {};
+
+      for (const p of aliveP) {
+        setSpeaking(p.id, "ANALYZING_VOTE...");
+        addLog(`  [VOTING] ${p.name}...`, "thinking"); renderLog();
+        const candidates = aliveP.filter(x => x.id !== p.id).map(x => x.id + "号" + x.name).join("、");
+        const prompt = `投票环节。前面发言：\n${speechText}\n可投：${candidates}（不能投自己）\n返回JSON：{"target":目标id数字,"reason":"一句话理由"}`;
+
+        let r = null, retries = 0, finalPrompt = prompt, commError = null;
+        while (retries < 3) {
+          try {
+            const resp = await callPlayer(p.name, makeSystemPrompt(p), finalPrompt);
+            const tempR = parseJSON(resp);
+            if (tempR?.target) {
+              const valid = aliveP.filter(x => x.id !== p.id);
+              if (tempR.target === p.id || !valid.find(x => x.id === tempR.target)) {
+                retries++; finalPrompt = prompt + `\n无效投票！请投存活的其他人。`; continue;
+              }
+              r = tempR; break;
+            } else { retries++; finalPrompt = prompt + `\n格式错误，必须是 {"target":数字, "reason":"理由"}`; }
+          } catch (e) { commError = e; break; }
+        }
+
+        if (r?.target) {
+          const tp = byId(r.target);
+          G.logs[G.logs.length - 1] = { content: `${p.name} → VOTE_FOR → ${tp.name}`, type: "vote" };
+          voteCount[r.target] = (voteCount[r.target] || 0) + 1;
+        } else if (commError) {
+          G.logs[G.logs.length - 1] = { content: `${p.name} → ABSTAIN [COMM_ERROR]`, type: "vote" };
+        } else {
+          G.logs[G.logs.length - 1] = { content: `${p.name} → ABSTAIN [SYS_REJECT]`, type: "vote" };
+        }
+        setSpeaking(null); renderLog();
+      }
+
+      addLog(`VOTE_RESULTS`, "phase");
+      const maxV = Math.max(...Object.values(voteCount), 0);
+      const tops = Object.entries(voteCount).filter(([, c]) => c === maxV).map(([id]) => parseInt(id));
+
+      alive().forEach(p => {
+        const cnt = voteCount[p.id] || 0;
+        if (cnt > 0) addLog(`  ${p.name}: ${cnt} VOTES ${"■".repeat(cnt)}`, "event");
+      });
+
+      if (tops.length === 1 && maxV > 0) {
+        const el = byId(tops[0]);
+        playHostTTS(`投票结果出炉，${el.name} 被淘汰。`, () => {
+          el.alive = false; addLog(`${el.name} (${el.role}) ELIMINATED (${maxV} VOTES)`, "death"); renderLog();
+        });
+        G.gameHistory.push(`第${G.day}天投票：${el.name}淘汰`);
+      } else if (tops.length > 1) {
+        playHostTTS(`平票，无人淘汰！`, () => { addLog(`TIE_VOTE. NO_ELIMINATION.`, "event"); renderLog(); });
+        G.gameHistory.push(`第${G.day}天投票：平票`);
+      } else {
+        playHostTTS('所有人弃票，无人出局。', () => { addLog(`ALL_ABSTAIN. NO_ELIMINATION.`, "event"); renderLog(); });
+        G.gameHistory.push(`第${G.day}天投票：弃票`);
+      }
+
+      const w = checkWin(G.players);
+      if (w) {
+        AudioMgr.stopBgm(); AudioMgr.playEffect(w === "wolf" ? '/static/audio/lose.mp3' : '/static/audio/win.mp3');
+        playHostTTS(w === "wolf" ? '游戏结束，狼人获胜' : '游戏结束，好人获胜', () => {
+          G.winner = w; G.phase = "game_over";
+          addLog(w === "wolf" ? "WOLVES_WIN" : "HUMANS_WIN", "win"); renderLog();
+        });
+      } else { G.day++; G.phase = "night"; }
+
+      await audioQueuePromise;
+      G.loading = false; render();
+    }
+
+    function handleAction() {
+      if (G.loading) return;
+      if (G.phase === "setup") startGame();
+      else if (G.phase === "night") runNight();
+      else if (G.phase === "speeches") runSpeeches();
+      else if (G.phase === "vote") runVote();
+      else if (G.phase === "game_over") { G.phase = "setup"; G.players = []; G.logs = []; render(); }
+    }
+
+    Stage3D.init();
+    render();
+    window.addEventListener('resize', () => { Stage3D.resize(); renderCards(); });
+  </script>
+</body>
+
+</html>
