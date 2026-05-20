@@ -33,40 +33,56 @@ OPENROUTER_KEY = os.environ.get("OPENROUTER_KEY")
 
 
 # ╔══════════════════════════════════════════════╗
-# ║        各 AI 的 API 配置                     ║
+# ║        各 API 渠道配置 (Endpoints)             ║
 # ╚══════════════════════════════════════════════╝
+# 你可以在这里统一定义可用的 API 模型。
 
-PROVIDERS = {
-    "Doubao": {
+ENDPOINTS = {
+    "doubao": {
         "url":   "https://ark.cn-beijing.volces.com/api/v3/chat/completions",
         "key":   DOUBAO_KEY,
         "model": "doubao-seed-character-251128",
     },
-    "DeepSeek": {
+    "deepseek": {
         "url":   "https://api.deepseek.com/chat/completions",
         "key":   DEEPSEEK_KEY,
         "model": "deepseek-chat",
     },
-    "Gemini": {
+    "gemini": {
         "url":   "https://openrouter.ai/api/v1/chat/completions",
         "key":   OPENROUTER_KEY,
         "model": "google/gemini-3-flash-preview",
     },
-    "ChatGPT": {
+    "gpt": {
         "url":   "https://openrouter.ai/api/v1/chat/completions",
         "key":   OPENROUTER_KEY,
         "model": "openai/gpt-5.4",
     },
-    "Claude": {
+    "claude": {
         "url":   "https://openrouter.ai/api/v1/chat/completions",
         "key":   OPENROUTER_KEY,
         "model": "anthropic/claude-sonnet-4.6",
     },
-    "Grok": {
+    "grok": {
         "url":   "https://openrouter.ai/api/v1/chat/completions",
         "key":   OPENROUTER_KEY,
         "model": "x-ai/grok-4.20",
     },
+}
+
+# ╔══════════════════════════════════════════════╗
+# ║        玩家绑定哪个 API 模型                   ║
+# ╚══════════════════════════════════════════════╝
+# 这里决定了前端 6 个玩家各自调用上面哪个 endpoint。
+# 如果你想让 6 个人都用 DeepSeek，就把后面的值全改成 "deepseek"
+
+PLAYER_ENDPOINTS = {
+    "Doubao":   "doubao",
+    "DeepSeek": "deepseek",
+    "Gemini":   "gemini",
+    "ChatGPT":  "gpt",
+    "Claude":   "claude",
+    "Grok":     "grok",
 }
 
 
@@ -121,10 +137,14 @@ def chat():
     system_msg = data.get("system", "")
     user_msg = data.get("message", "")
 
-    if player not in PROVIDERS:
+    if player not in PLAYER_ENDPOINTS:
         return jsonify({"error": f"未知玩家: {player}"}), 400
 
-    cfg = PROVIDERS[player]
+    endpoint_name = PLAYER_ENDPOINTS[player]
+    if endpoint_name not in ENDPOINTS:
+        return jsonify({"error": f"玩家绑定的接口未配置: {endpoint_name}"}), 500
+
+    cfg = ENDPOINTS[endpoint_name]
 
 
     headers = {
@@ -211,13 +231,18 @@ def tts():
 def health():
     """检查各 API 配置状态"""
     status = {}
-    for name, cfg in PROVIDERS.items():
-        has_key = cfg["key"] not in ("", "在这里填入你的Key")
-        status[name] = {
-            "model": cfg["model"],
-            "key_configured": has_key,
-            "url": cfg["url"],
-        }
+    for name, endpoint in PLAYER_ENDPOINTS.items():
+        if endpoint in ENDPOINTS:
+            cfg = ENDPOINTS[endpoint]
+            has_key = cfg["key"] not in ("", "在这里填入你的Key", None)
+            status[name] = {
+                "endpoint": endpoint,
+                "model": cfg["model"],
+                "key_configured": has_key,
+                "url": cfg["url"],
+            }
+        else:
+            status[name] = {"error": f"未知的接口: {endpoint}"}
     return jsonify(status)
 
 
